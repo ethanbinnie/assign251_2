@@ -13,6 +13,9 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class MemAppenderTest {
@@ -55,7 +58,7 @@ class MemAppenderTest {
     @Test
     void discardsOldestEventWhenMaximumSizeIsReached() {
         appender.setMaxSize(2);
-
+        long discardedBefore = appender.getDiscardedLogCount();
         appender.append(createEvent("First"));
         appender.append(createEvent("Second"));
         appender.append(createEvent("Third"));
@@ -71,7 +74,69 @@ class MemAppenderTest {
                 "Third",
                 logs.get(1).getMessage().getFormattedMessage()
         );
-        assertEquals(1, appender.getDiscardedLogCount());
+        assertEquals(discardedBefore + 1, appender.getDiscardedLogCount());
+    }
+
+    @Test
+    void getEventStringsFormatsMessages() {
+        appender.append(createEvent("Hello"));
+        appender.append(createEvent("World"));
+
+        List<String> strings = appender.getEventStrings();
+
+        assertEquals(2, strings.size());
+        assertEquals("Hello", strings.get(0));
+        assertEquals("World", strings.get(1));
+    }
+
+    @Test
+    void clearingLogsDoesNotIncreaseDiscardedCount() {
+        appender.setMaxSize(2);
+        long discardedBefore = appender.getDiscardedLogCount();
+        appender.append(createEvent("First"));
+        appender.append(createEvent("Second"));
+        appender.append(createEvent("Third"));
+
+        assertEquals(discardedBefore + 1, appender.getDiscardedLogCount());
+
+        appender.clearLogs();
+
+        assertTrue(appender.getCurrentLogs().isEmpty());
+        assertEquals(discardedBefore + 1, appender.getDiscardedLogCount());
+    }
+
+    @Test
+    void rejectsInvalidMaximumSize() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> appender.setMaxSize(0)
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> appender.setMaxSize(-1)
+        );
+    }
+
+
+    @Test
+    void printLogsPrintsEventsAndClearsThem() {
+        appender.append(createEvent("Hello"));
+        appender.append(createEvent("World"));
+
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        PrintStream originalOut = System.out;
+
+        try {
+            System.setOut(new PrintStream(output));
+
+            appender.printLogs();
+
+            assertEquals("HelloWorld", output.toString());
+            assertTrue(appender.getCurrentLogs().isEmpty());
+        } finally {
+            System.setOut(originalOut);
+        }
     }
 
     private LogEvent createEvent(String message) {
