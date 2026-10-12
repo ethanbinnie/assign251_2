@@ -139,6 +139,67 @@ class MemAppenderTest {
         }
     }
 
+    @Test
+    void getInstanceReturnsSameInstance() {
+        List<LogEvent> freshEvents = new ArrayList<>();
+
+        MemAppender.resetInstanceForTesting();
+
+        try {
+            MemAppender first = MemAppender.getInstance(
+                    freshEvents,
+                    PatternLayout.newBuilder().withPattern("%m").build()
+            );
+
+            MemAppender second = MemAppender.getInstance(
+                    new ArrayList<>(),
+                    PatternLayout.newBuilder().withPattern("%m").build()
+            );
+
+            assertSame(first, second);
+        } finally {
+            MemAppender.resetInstanceForTesting();
+        }
+    }
+
+    @Test
+    void storesEventsInInjectedList() {
+        List<LogEvent> injectedEvents = new ArrayList<>();
+
+        MemAppender.resetInstanceForTesting();
+
+        try {
+            MemAppender testAppender = MemAppender.getInstance(
+                    injectedEvents,
+                    PatternLayout.newBuilder().withPattern("%m").build()
+            );
+
+            testAppender.append(createEvent("Injected event"));
+
+            assertEquals(1, injectedEvents.size());
+            assertEquals(
+                    "Injected event",
+                    injectedEvents.get(0).getMessage().getFormattedMessage()
+            );
+        } finally {
+            MemAppender.resetInstanceForTesting();
+        }
+    }
+
+    @Test
+    void returnedLogsCannotBeModified() {
+        appender.append(createEvent("Protected event"));
+
+        List<LogEvent> logs = appender.getCurrentLogs();
+
+        assertThrows(
+                UnsupportedOperationException.class,
+                () -> logs.clear()
+        );
+
+        assertEquals(1, appender.getCurrentLogs().size());
+    }
+
     private LogEvent createEvent(String message) {
         return Log4jLogEvent.newBuilder()
                 .setLoggerName("TestLogger")

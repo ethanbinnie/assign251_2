@@ -39,6 +39,10 @@ public class MemAppender extends AbstractAppender {
         return instance;
     }
 
+    static synchronized void resetInstanceForTesting() {
+        instance = null;
+    }
+
     @Override
     public synchronized void append(LogEvent event) {
         Objects.requireNonNull(event, "Log event cannot be null");
