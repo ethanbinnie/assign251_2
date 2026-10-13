@@ -200,6 +200,55 @@ class MemAppenderTest {
         assertEquals(1, appender.getCurrentLogs().size());
     }
 
+    @Test
+    void getMaxSizeReturnsDefaultValue() {
+        MemAppender.resetInstanceForTesting();
+
+        try {
+            MemAppender testAppender = MemAppender.getInstance(
+                    new ArrayList<>(),
+                    PatternLayout.newBuilder()
+                            .withPattern("%m%n")
+                            .build()
+            );
+
+            assertEquals(1000, testAppender.getMaxSize());
+        } finally {
+            MemAppender.resetInstanceForTesting();
+        }
+    }
+
+    @Test
+    void reducingMaxSizeDiscardsOldestLogs() {
+        MemAppender.resetInstanceForTesting();
+
+        try {
+            MemAppender testAppender = MemAppender.getInstance(
+                    new ArrayList<>(),
+                    PatternLayout.newBuilder()
+                            .withPattern("%m%n")
+                            .build()
+            );
+
+            testAppender.append(createEvent("First"));
+            testAppender.append(createEvent("Second"));
+            testAppender.append(createEvent("Third"));
+
+            testAppender.setMaxSize(2);
+
+            assertEquals(2, testAppender.getMaxSize());
+            assertEquals(2, testAppender.getCurrentLogs().size());
+            assertEquals(1, testAppender.getDiscardedLogCount());
+            assertEquals(
+                    "Second",
+                    testAppender.getCurrentLogs().get(0)
+                            .getMessage().getFormattedMessage()
+            );
+        } finally {
+            MemAppender.resetInstanceForTesting();
+        }
+    }
+
     private LogEvent createEvent(String message) {
         return Log4jLogEvent.newBuilder()
                 .setLoggerName("TestLogger")
