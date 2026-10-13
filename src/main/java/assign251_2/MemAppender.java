@@ -7,6 +7,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import java.lang.management.ManagementFactory;
+import javax.management.ObjectName;
+
 import org.apache.logging.log4j.core.Layout;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.appender.AbstractAppender;
@@ -109,6 +112,28 @@ public class MemAppender extends AbstractAppender {
 
     public synchronized long getDiscardedLogCount() {
         return discardedLogCount;
+    }
+
+    public void registerMBean() {
+        try {
+            ObjectName name = new ObjectName(
+                    "assign251_2:type=MemAppender"
+            );
+
+            var server = ManagementFactory.getPlatformMBeanServer();
+
+            if (!server.isRegistered(name)) {
+                server.registerMBean(
+                        new MemAppenderMBeanImpl(this),
+                        name
+                );
+            }
+
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "Failed to register MemAppender MBean", e
+            );
+        }
     }
 }
 
