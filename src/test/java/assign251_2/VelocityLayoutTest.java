@@ -88,6 +88,27 @@ class VelocityLayoutTest {
         );
     }
 
+
+    @Test
+    void changesPatternUsingSetter() {
+        VelocityLayout layout = new VelocityLayout("$m");
+        LogEvent event = createEvent("Hello world");
+
+        layout.setPattern("[$p] $m");
+
+        assertEquals("[$p] $m", layout.getPattern());
+        assertEquals("[INFO] Hello world", layout.toSerializable(event));
+    }
+
+    @Test
+    void formatsMessage() {
+        VelocityLayout layout = new VelocityLayout("$m");
+        LogEvent event = createEvent("Hello world");
+
+        assertEquals("Hello world", layout.toSerializable(event));
+    }
+
+
     private LogEvent createEvent(String message) {
         return Log4jLogEvent.newBuilder()
                 .setLoggerName("TestLogger")

@@ -10,7 +10,7 @@ import org.apache.velocity.app.VelocityEngine;
 
 public class VelocityLayout extends AbstractStringLayout {
 
-    private final String template;
+    private String template;
     private final VelocityEngine velocityEngine;
 
     public VelocityLayout(String template) {
@@ -23,6 +23,18 @@ public class VelocityLayout extends AbstractStringLayout {
         this.template = template;
         this.velocityEngine = new VelocityEngine();
         this.velocityEngine.init();
+    }
+
+    public void setPattern(String template) {
+        if (template == null) {
+            throw new IllegalArgumentException("Template cannot be null");
+        }
+
+        this.template = template;
+    }
+
+    public String getPattern() {
+        return template;
     }
 
     @Override
